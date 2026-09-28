@@ -59,4 +59,6 @@ By signing below, we acknowledge that we have read, discussed, and agreed to the
 Team Member Signatures:
 
 Yunda (Rydan) Qu
+Franziska von Janson
+Vichaya (Angie) Trakulkajornsak
 Aidan Sun
