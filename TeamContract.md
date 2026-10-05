@@ -61,4 +61,4 @@ Team Member Signatures:
 Yunda (Rydan) Qu\
 Franziska von Janson\
 Vichaya (Angie) Trakulkajornsak\
-Aidan Sun\
+Aidan Sun
