@@ -37,7 +37,8 @@ This contract sets out shared expectations and commitments for how our team will
 
 ## Decision Making
 
-* How will decisions about your team project be made? (Examples: By majority vote, by unanimous vote, etc.)
+* We will discuss decisions about our team project as a group and if no unanimous agreement is reached, we will attempt to reach a compromise by including everybody's ideas. If no compromise can be reached after further discussion, we will go by majority vote.
+* In the event that the majority vote is split evenly, we will discuss and possibly find a third option that we all agree on.
 
 ---
 ## Conflict resolution
