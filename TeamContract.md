@@ -26,7 +26,14 @@ This contract sets out shared expectations and commitments for how our team will
     - some examples of possible additional team norms and expectations are included in the sample team contract in case your team needs some help getting ideas for what else you want to include.
 
 ---
+## Attendance and Participation
 
+* We will attend all scheduled classes and team meetings unless illness or emergencies occur.
+* If unable to attend, we wil communicate through the Discord and notify the team in advance. 
+  * Each member will make up any missed work asynchronously.
+* During team meetings and labs, every member will contribute ideas and engage in the conversation.
+
+---
 ## Decision Making
 
 * We will discuss decisions about our team project as a group and if no unanimous agreement is reached, we will attempt to reach a compromise by including everybody's ideas. If no compromise can be reached after further discussion, we will go by majority vote.
