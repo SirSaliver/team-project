@@ -80,7 +80,7 @@ class EstimateRoiInteractorTest {
   }
 
   @Test
-  void priceDropGivesALoss() {
+  void priceDropGivesLoss() {
     final FakePresenter presenter = run(List.of(200.0, 150.0), 500, 1);
 
     assertEquals(375.0, presenter.success.getEstimatedValue(), DELTA);
@@ -114,7 +114,7 @@ class EstimateRoiInteractorTest {
   }
 
   @Test
-  void notANumberAmountIsRejected() {
+  void nanAmountIsRejected() {
     final FakePresenter presenter = run(List.of(100.0, 110.0), Double.NaN, 1);
 
     assertEquals("Please enter a positive investment amount.", presenter.error);
