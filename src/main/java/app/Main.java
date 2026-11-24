@@ -28,6 +28,7 @@ public class Main {
         JFrame application = new AppBuilder(apiKey)
                 .addSetRiskProfileView()
                 .addSetRiskProfileUseCase()
+                .addAddToWatchlistUseCase()
                 .addViewStockInfoUseCase()
                 .build();
         application.setVisible(true);

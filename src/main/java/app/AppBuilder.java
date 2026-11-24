@@ -4,6 +4,9 @@ import dataaccess.ApiStockDataAccessObject;
 import dataaccess.CachedStockHistoryDataAccessObject;
 import dataaccess.FileRiskProfileSettingsDataAccessObject;
 import dataaccess.FileWatchlistDataAccessObject;
+import interfaceadapter.addtowatchlist.AddToWatchlistController;
+import interfaceadapter.addtowatchlist.AddToWatchlistPresenter;
+import interfaceadapter.addtowatchlist.AddToWatchlistViewModel;
 import interfaceadapter.setriskprofile.SetRiskProfileController;
 import interfaceadapter.setriskprofile.SetRiskProfilePresenter;
 import interfaceadapter.setriskprofile.SetRiskProfileViewModel;
@@ -14,11 +17,14 @@ import java.io.IOException;
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 import javax.swing.WindowConstants;
+import usecase.addtowatchlist.AddToWatchlistInputBoundary;
+import usecase.addtowatchlist.AddToWatchlistInteractor;
 import usecase.setriskprofile.SetRiskProfileInputBoundary;
 import usecase.setriskprofile.SetRiskProfileInteractor;
 import usecase.shared.projection.TargetGainSellStrategy;
 import usecase.viewstockinfo.ViewStockInfoInputBoundary;
 import usecase.viewstockinfo.ViewStockInfoInteractor;
+import view.AddToWatchlistView;
 import view.SetRiskProfileView;
 import view.ViewStockInfoView;
 
@@ -34,6 +40,7 @@ public class AppBuilder {
 
   private final ApiStockDataAccessObject stockDataAccessObject;
   private final FileRiskProfileSettingsDataAccessObject riskProfileSettingsDataAccessObject;
+  private final FileWatchlistDataAccessObject watchlistDataAccessObject;
 
   private SetRiskProfileViewModel setRiskProfileViewModel;
   private SetRiskProfileView setRiskProfileView;
@@ -49,6 +56,7 @@ public class AppBuilder {
     stockDataAccessObject = new ApiStockDataAccessObject(apiKey);
     riskProfileSettingsDataAccessObject =
             new FileRiskProfileSettingsDataAccessObject(RISK_PROFILE_SETTINGS_FILE);
+    watchlistDataAccessObject = new FileWatchlistDataAccessObject(WATCHLIST_FILE);
   }
 
   /**
@@ -80,17 +88,31 @@ public class AppBuilder {
   }
 
   /**
+   * Adds and wires the Add Stocks tab, where the user searches for stocks to add to the watchlist.
+   *
+   * @return This builder
+   */
+  public AppBuilder addAddToWatchlistUseCase() {
+    AddToWatchlistViewModel viewModel = new AddToWatchlistViewModel();
+    AddToWatchlistPresenter presenter = new AddToWatchlistPresenter(viewModel);
+    AddToWatchlistInputBoundary interactor = new AddToWatchlistInteractor(
+            watchlistDataAccessObject, stockDataAccessObject, presenter);
+    AddToWatchlistController controller = new AddToWatchlistController(interactor);
+    tabs.addTab("Add Stocks", new AddToWatchlistView(viewModel, controller));
+    return this;
+  }
+
+  /**
    * Adds and wires the Stock Info tab.
    *
    * @return This builder
-   * @throws IOException If the watchlist directory cannot be opened
    */
-  public AppBuilder addViewStockInfoUseCase() throws IOException {
+  public AppBuilder addViewStockInfoUseCase() {
     ViewStockInfoViewModel viewModel = new ViewStockInfoViewModel();
     ViewStockInfoPresenter presenter = new ViewStockInfoPresenter(viewModel);
     ViewStockInfoInputBoundary interactor = new ViewStockInfoInteractor(
             new CachedStockHistoryDataAccessObject(stockDataAccessObject),
-            new FileWatchlistDataAccessObject(WATCHLIST_FILE), presenter);
+            watchlistDataAccessObject, presenter);
     ViewStockInfoController controller = new ViewStockInfoController(interactor);
     ViewStockInfoView view = new ViewStockInfoView(viewModel, controller);
     tabs.addChangeListener(event -> {

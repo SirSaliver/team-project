@@ -23,4 +23,26 @@ public class Stock {
   public String getTicker() {
     return ticker;
   }
+
+  /**
+   * Two stocks are equal when they have the same ticker.
+   *
+   * @param other The object to compare with
+   * @return Whether other is a Stock with the same ticker
+   */
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) {
+      return true;
+    }
+    if (!(other instanceof Stock)) {
+      return false;
+    }
+    return ticker.equals(((Stock) other).ticker);
+  }
+
+  @Override
+  public int hashCode() {
+    return ticker.hashCode();
+  }
 }

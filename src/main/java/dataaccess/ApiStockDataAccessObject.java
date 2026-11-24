@@ -7,19 +7,29 @@ import io.polygon.kotlin.sdk.rest.AggregateDTO;
 import io.polygon.kotlin.sdk.rest.AggregatesDTO;
 import io.polygon.kotlin.sdk.rest.AggregatesParametersBuilder;
 import io.polygon.kotlin.sdk.rest.PolygonRestClient;
+import io.polygon.kotlin.sdk.rest.reference.SupportedTickersParametersBuilder;
+import io.polygon.kotlin.sdk.rest.reference.TickerDTO;
+import io.polygon.kotlin.sdk.rest.reference.TickersDTO;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import usecase.addtowatchlist.AddToWatchlistStockDataAccessInterface;
+import usecase.addtowatchlist.StockSearchResult;
 import usecase.setriskprofile.SetRiskProfileStockDataAccessInterface;
 
 /**
  * Implementation of the Data Access Object (DAO) for accessing stock data that uses the Massive.com
  * API.
  */
-public class ApiStockDataAccessObject implements SetRiskProfileStockDataAccessInterface {
+public class ApiStockDataAccessObject implements SetRiskProfileStockDataAccessInterface,
+        AddToWatchlistStockDataAccessInterface {
   // TODO: After we add data access interfaces to our use cases, make this class implement them.
+  private static final int SEARCH_RESULT_LIMIT = 20;
+
   private final PolygonRestClient client;
 
   /**
@@ -74,5 +84,41 @@ public class ApiStockDataAccessObject implements SetRiskProfileStockDataAccessIn
       result.add(aggregate);
     }
     return result;
+  }
+
+  /**
+   * Searches active stock listings whose ticker symbol or company name contains the query.
+   *
+   * @param query The text to search for
+   * @return Up to twenty matching stocks, sorted by ticker
+   * @throws IOException If the API request fails
+   */
+  @Override
+  public List<StockSearchResult> searchStocks(String query) throws IOException {
+    TickersDTO response;
+    try {
+      response = client.getReferenceClient().getSupportedTickersBlocking(
+              new SupportedTickersParametersBuilder()
+                      .search(query)
+                      .market("stocks")
+                      .activeSymbolsOnly(true)
+                      .limit(SEARCH_RESULT_LIMIT)
+                      .build());
+    } catch (RuntimeException e) {
+      // The SDK reports network and HTTP failures as unchecked exceptions.
+      throw new IOException("Stock search failed", e);
+    }
+
+    List<StockSearchResult> results = new ArrayList<>();
+    if (response.getResults() == null) {
+      return results;
+    }
+    for (TickerDTO dto : response.getResults()) {
+      if (dto.getTicker() != null && !dto.getTicker().isBlank()) {
+        results.add(new StockSearchResult(dto.getTicker(), dto.getName(),
+                dto.getPrimaryExchange()));
+      }
+    }
+    return results;
   }
 }
