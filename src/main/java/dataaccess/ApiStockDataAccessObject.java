@@ -12,13 +12,15 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Optional;
+import usecase.pricechange.PriceChangeStockDataAccessInterface;
 import usecase.setriskprofile.SetRiskProfileStockDataAccessInterface;
 
 /**
  * Implementation of the Data Access Object (DAO) for accessing stock data that uses the Massive.com
  * API.
  */
-public class ApiStockDataAccessObject implements SetRiskProfileStockDataAccessInterface {
+public class ApiStockDataAccessObject implements SetRiskProfileStockDataAccessInterface,
+        PriceChangeStockDataAccessInterface {
   // TODO: After we add data access interfaces to our use cases, make this class implement them.
   private final PolygonRestClient client;
 

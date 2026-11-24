@@ -4,6 +4,9 @@ import dataaccess.ApiStockDataAccessObject;
 import dataaccess.CachedStockHistoryDataAccessObject;
 import dataaccess.FileRiskProfileSettingsDataAccessObject;
 import dataaccess.FileWatchlistDataAccessObject;
+import interfaceadapter.pricechange.PriceChangeController;
+import interfaceadapter.pricechange.PriceChangePresenter;
+import interfaceadapter.pricechange.PriceChangeViewModel;
 import interfaceadapter.setriskprofile.SetRiskProfileController;
 import interfaceadapter.setriskprofile.SetRiskProfilePresenter;
 import interfaceadapter.setriskprofile.SetRiskProfileViewModel;
@@ -13,12 +16,17 @@ import interfaceadapter.viewstockinfo.ViewStockInfoViewModel;
 import java.io.IOException;
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
+import usecase.pricechange.PriceChangeInputBoundary;
+import usecase.pricechange.PriceChangeInteractor;
 import usecase.setriskprofile.SetRiskProfileInputBoundary;
 import usecase.setriskprofile.SetRiskProfileInteractor;
+import usecase.shared.projection.SellProjector;
 import usecase.shared.projection.TargetGainSellStrategy;
 import usecase.viewstockinfo.ViewStockInfoInputBoundary;
 import usecase.viewstockinfo.ViewStockInfoInteractor;
+import view.PriceChangeView;
 import view.SetRiskProfileView;
 import view.ViewStockInfoView;
 
@@ -38,6 +46,9 @@ public class AppBuilder {
   private SetRiskProfileViewModel setRiskProfileViewModel;
   private SetRiskProfileView setRiskProfileView;
   private SetRiskProfileController setRiskProfileController;
+
+  private PriceChangeViewModel priceChangeViewModel;
+  private PriceChangeView priceChangeView;
 
   /**
    * Creates a new AppBuilder.
@@ -64,16 +75,56 @@ public class AppBuilder {
   }
 
   /**
+   * Adds the Price Change view to the application, as an optional next step after a Set Risk
+   * Profile estimate. Its tab stays disabled until an estimate is available. Must be called after
+   * {@link #addSetRiskProfileView()} and before {@link #addSetRiskProfileUseCase()}.
+   *
+   * @return This builder
+   */
+  public AppBuilder addPriceChangeView() {
+    priceChangeViewModel = new PriceChangeViewModel();
+    priceChangeView = new PriceChangeView(priceChangeViewModel);
+    tabs.addTab("Price Change", priceChangeView);
+    int tabIndex = tabs.indexOfComponent(priceChangeView);
+    tabs.setEnabledAt(tabIndex, false);
+
+    priceChangeViewModel.addPropertyChangeListener(event -> {
+      if (PriceChangeViewModel.SCENARIO_PROPERTY.equals(event.getPropertyName())) {
+        SwingUtilities.invokeLater(() -> tabs.setEnabledAt(tabIndex, true));
+      }
+    });
+    setRiskProfileView.setPriceChangeNavigation(() -> tabs.setSelectedComponent(priceChangeView));
+    return this;
+  }
+
+  /**
+   * Adds the Price Change use case to the application. Must be called after
+   * {@link #addPriceChangeView()}.
+   *
+   * @return This builder
+   */
+  public AppBuilder addPriceChangeUseCase() {
+    PriceChangePresenter presenter = new PriceChangePresenter(priceChangeViewModel);
+    PriceChangeInputBoundary interactor = new PriceChangeInteractor(stockDataAccessObject,
+            presenter, new SellProjector(new TargetGainSellStrategy()));
+    priceChangeView.setController(new PriceChangeController(interactor));
+    return this;
+  }
+
+  /**
    * Adds the Set Risk Profile use case to the application. Must be called after
-   * {@link #addSetRiskProfileView()}.
+   * {@link #addSetRiskProfileView()}, and after {@link #addPriceChangeView()} if the Price Change
+   * use case is included.
    *
    * @return This builder
    */
   public AppBuilder addSetRiskProfileUseCase() {
-    SetRiskProfilePresenter presenter = new SetRiskProfilePresenter(setRiskProfileViewModel);
+    // priceChangeViewModel is null unless addPriceChangeView() was called first
+    SetRiskProfilePresenter presenter = new SetRiskProfilePresenter(setRiskProfileViewModel,
+            priceChangeViewModel);
     SetRiskProfileInputBoundary interactor = new SetRiskProfileInteractor(
             stockDataAccessObject, riskProfileSettingsDataAccessObject, presenter,
-            new TargetGainSellStrategy());
+            new SellProjector(new TargetGainSellStrategy()));
     setRiskProfileController = new SetRiskProfileController(interactor);
     setRiskProfileView.setController(setRiskProfileController);
     return this;

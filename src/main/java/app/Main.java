@@ -27,7 +27,9 @@ public class Main {
       try {
         JFrame application = new AppBuilder(apiKey)
                 .addSetRiskProfileView()
+                .addPriceChangeView()
                 .addSetRiskProfileUseCase()
+                .addPriceChangeUseCase()
                 .addViewStockInfoUseCase()
                 .build();
         application.setVisible(true);

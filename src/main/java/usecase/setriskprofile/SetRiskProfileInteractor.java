@@ -1,20 +1,17 @@
 package usecase.setriskprofile;
 
 import entities.DailyAggregate;
-import entities.GrowthStats;
 import entities.RiskProfile;
 import entities.RiskProfilePreset;
 import entities.RiskProfileSettings;
-import entities.SellEstimate;
 import entities.Stock;
 import java.io.IOException;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import usecase.shared.projection.SellStrategy;
+import usecase.shared.projection.SellProjector;
 
 /**
  * The Set Risk Profile Interactor.
@@ -27,7 +24,7 @@ public class SetRiskProfileInteractor implements SetRiskProfileInputBoundary {
   private final SetRiskProfileStockDataAccessInterface stockDataAccessObject;
   private final SetRiskProfileSettingsDataAccessInterface settingsDataAccessObject;
   private final SetRiskProfileOutputBoundary presenter;
-  private final SellStrategy strategy;
+  private final SellProjector projector;
 
   /**
    * Creates a new SetRiskProfileInteractor.
@@ -35,17 +32,17 @@ public class SetRiskProfileInteractor implements SetRiskProfileInputBoundary {
    * @param stockDataAccessInterface Data access object for stock price history
    * @param settingsDataAccessInterface Data access object for persisting the user's settings
    * @param outputBoundary The presenter
-   * @param strategy Algorithm used to estimate when to sell
+   * @param projector Projector algorithm used to estimate when to sell
    */
   public SetRiskProfileInteractor(
           SetRiskProfileStockDataAccessInterface stockDataAccessInterface,
           SetRiskProfileSettingsDataAccessInterface settingsDataAccessInterface,
           SetRiskProfileOutputBoundary outputBoundary,
-          SellStrategy strategy) {
+          SellProjector projector) {
     this.stockDataAccessObject = stockDataAccessInterface;
     this.settingsDataAccessObject = settingsDataAccessInterface;
     this.presenter = outputBoundary;
-    this.strategy = strategy;
+    this.projector = projector;
   }
 
   @Override
@@ -79,21 +76,12 @@ public class SetRiskProfileInteractor implements SetRiskProfileInputBoundary {
         throw new IllegalArgumentException("No price data found for " + ticker);
       }
 
-      GrowthStats stats = new GrowthStats(history);
       DailyAggregate latest = history.get(history.size() - 1);
       double startPrice = latest.getClose();
-      if (amount < startPrice) {
-        throw new IllegalArgumentException(String.format(
-                "Amount must be at least the price of one share ($%.2f)", startPrice));
-      }
-
-      SellEstimate estimate = strategy.estimate(amount, startPrice, stats, profile);
-      LocalDate lastTradingDay = latest.getTime().atZone(MARKET_TIME_ZONE).toLocalDate();
-      LocalDate sellDate = addTradingDays(lastTradingDay, estimate.getHoldPeriod());
-
-      outputData = new SetRiskProfileOutputData(ticker, startPrice, sellDate,
-              estimate.getHoldPeriod(), estimate.getSellPrice(), estimate.getError(),
-              estimate.getReturns(), estimate.isTargetReached());
+      outputData = new SetRiskProfileOutputData(ticker,
+              projector.project(MARKET_TIME_ZONE, history, amount, startPrice, profile),
+              amount, profile.getTargetGain(), profile.getMaxHoldingPeriod(),
+              settings.getPriceWindowMonths());
     } catch (IllegalArgumentException e) {
       // Any validation error was encountered
       presenter.prepareFailView(e.getMessage());
@@ -139,25 +127,5 @@ public class SetRiskProfileInteractor implements SetRiskProfileInputBoundary {
     if (loadError != null) {
       presenter.prepareFailView(loadError);
     }
-  }
-
-  /**
-   * Adds a number of trading days (weekdays) to a date. Market holidays are not accounted for.
-   *
-   * @param start The starting date
-   * @param tradingDays Number of trading days to add
-   * @return The date the given number of trading days after the start date
-   */
-  private static LocalDate addTradingDays(LocalDate start, int tradingDays) {
-    LocalDate date = start;
-    int added = 0;
-    while (added < tradingDays) {
-      date = date.plusDays(1);
-      DayOfWeek day = date.getDayOfWeek();
-      if (day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY) {
-        added++;
-      }
-    }
-    return date;
   }
 }
