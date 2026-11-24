@@ -20,40 +20,33 @@ public class TargetGainSellStrategy implements SellStrategy {
     return startPrice * Math.exp(mu * t);
   }
 
-  /**
-   * Calculates the dollar returns of a stock.
-   *
-   * @param startPrice Starting price of one share
-   * @param endPrice Ending (when sold) price of one share
-   * @param amount Dollar amount invested
-   * @return Dollar amount gained or lost after selling
-   */
-  private double getReturns(double startPrice, double endPrice, double amount) {
-    int shares = (int) (amount / startPrice); // Only whole shares can be bought
-    return shares * (endPrice - startPrice);
-  }
-
   @Override
-  public SellEstimate estimate(double amount, double startPrice, GrowthStats stats,
-                               RiskProfile profile) {
-    double targetGain = profile.getTargetGain();
+  public SellEstimate estimate(double amount, double purchasePrice, double currentPrice,
+                               GrowthStats stats, RiskProfile profile) {
+    // Only whole shares can be bought, and they are bought at the purchase price
+    int shares = (int) (amount / purchasePrice);
+    double targetPrice = purchasePrice * (1 + profile.getTargetGain());
     double mu = stats.getAverageDailyReturn();
     int maxHoldPeriod = profile.getMaxHoldingPeriod();
 
     int holdPeriod = maxHoldPeriod;
     boolean targetHit = false;
-    if (mu > 0) {
-      // Result of solving P_0 * e^(mu*t) = P_0(1 + g) for t
-      double daysToTarget = Math.ceil(Math.log(1 + targetGain) / mu);
+    if (currentPrice >= targetPrice) {
+      // The target has already been reached, so there is no reason to keep holding
+      holdPeriod = 0;
+      targetHit = true;
+    } else if (mu > 0) {
+      // Result of solving P_current * e^(mu*t) = P_purchase(1 + g) for t
+      double daysToTarget = Math.ceil(Math.log(targetPrice / currentPrice) / mu);
       if (daysToTarget <= maxHoldPeriod) {
         holdPeriod = (int) daysToTarget;
         targetHit = true;
       }
     }
 
-    double projectedPrice = getProjectedPrice(startPrice, mu, holdPeriod);
+    double projectedPrice = getProjectedPrice(currentPrice, mu, holdPeriod);
     double error = stats.getVolatility() * Math.sqrt(holdPeriod);
-    double returns = getReturns(startPrice, projectedPrice, amount);
-    return new SellEstimate(holdPeriod, error, projectedPrice, returns, targetHit);
+    double returns = shares * (projectedPrice - purchasePrice);
+    return new SellEstimate(holdPeriod, error, projectedPrice, shares, returns, targetHit);
   }
 }

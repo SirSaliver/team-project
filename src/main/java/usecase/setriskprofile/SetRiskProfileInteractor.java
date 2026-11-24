@@ -11,7 +11,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import usecase.shared.projection.SellProjector;
 
 /**
@@ -80,7 +79,9 @@ public class SetRiskProfileInteractor implements SetRiskProfileInputBoundary {
       DailyAggregate latest = history.get(history.size() - 1);
       double startPrice = latest.getClose();
       outputData = new SetRiskProfileOutputData(ticker,
-              projector.project(MARKET_TIME_ZONE, history, amount, startPrice, profile));
+              projector.project(MARKET_TIME_ZONE, history, amount, startPrice, profile),
+              amount, profile.getTargetGain(), profile.getMaxHoldingPeriod(),
+              settings.getPriceWindowMonths());
     } catch (IllegalArgumentException e) {
       // Any validation error was encountered
       presenter.prepareFailView(e.getMessage());

@@ -61,6 +61,10 @@ public class SetRiskProfileView extends JPanel implements PropertyChangeListener
   private final JLabel priceRangeLabel = new JLabel();
   private final JLabel returnsLabel = new JLabel();
   private final JLabel targetMessageLabel = new JLabel();
+  private final JButton explorePriceChangeButton = new JButton("Explore a price change…");
+
+  /** Opens the Price Change view, or null if the application does not include it. */
+  private Runnable priceChangeNavigation;
 
   /** Set while the view is being updated from the view model, so listeners don't react. */
   private boolean updatingFromModel;
@@ -92,6 +96,11 @@ public class SetRiskProfileView extends JPanel implements PropertyChangeListener
 
     profileComboBox.addActionListener(e -> onProfileSelected());
     estimateButton.addActionListener(e -> onEstimate());
+    explorePriceChangeButton.addActionListener(e -> {
+      if (priceChangeNavigation != null) {
+        priceChangeNavigation.run();
+      }
+    });
     tickerField.addActionListener(e -> onEstimate());
   }
 
@@ -101,6 +110,15 @@ public class SetRiskProfileView extends JPanel implements PropertyChangeListener
 
   public void setController(SetRiskProfileController controller) {
     this.controller = controller;
+  }
+
+  /**
+   * Offers the Price Change use case as an optional next step after an estimate is shown.
+   *
+   * @param navigation Opens the Price Change view when the user chooses to explore a price change
+   */
+  public void setPriceChangeNavigation(Runnable navigation) {
+    this.priceChangeNavigation = navigation;
   }
 
   private JPanel buildForm() {
@@ -155,6 +173,15 @@ public class SetRiskProfileView extends JPanel implements PropertyChangeListener
     c.anchor = GridBagConstraints.WEST;
     c.insets = new Insets(4, 4, 4, 4);
     resultPanel.add(targetMessageLabel, c);
+
+    c = new GridBagConstraints();
+    c.gridx = 0;
+    c.gridy = row + 1;
+    c.gridwidth = 2;
+    c.anchor = GridBagConstraints.WEST;
+    c.insets = new Insets(8, 4, 4, 4);
+    resultPanel.add(explorePriceChangeButton, c);
+    explorePriceChangeButton.setVisible(false);
 
     resultPanel.setVisible(false);
     return resultPanel;
@@ -311,6 +338,7 @@ public class SetRiskProfileView extends JPanel implements PropertyChangeListener
     targetMessageLabel.setText(state.getTargetMessage());
     targetMessageLabel.setForeground(state.isTargetReached()
             ? new Color(0, 128, 0) : new Color(176, 112, 0));
+    explorePriceChangeButton.setVisible(priceChangeNavigation != null);
     resultPanel.setVisible(true);
     setStatus(" ", false);
     revalidateWindow();

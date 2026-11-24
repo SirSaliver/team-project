@@ -9,13 +9,17 @@ import entities.RiskProfile;
  */
 public interface SellStrategy {
   /**
-   * Estimates the holding period and expected return of a stock.
+   * Estimates the holding period and expected return of a stock. The position is bought at
+   * {@code purchasePrice}, and the projection into the future starts from {@code currentPrice}.
+   * Shares, target gain and returns are all measured relative to the purchase price.
    *
-   * @param amount Dollar amount invested
-   * @param startPrice Starting price of one share
+   * @param amount Dollar amount invested at the purchase price
+   * @param purchasePrice Price of one share when it was bought
+   * @param currentPrice Price of one share now, from which the projection starts
    * @param stats Growth statistics of the stock in the past
    * @param profile The user's risk profile
    * @return An estimate of the holding period and return
    */
-  SellEstimate estimate(double amount, double startPrice, GrowthStats stats, RiskProfile profile);
+  SellEstimate estimate(double amount, double purchasePrice, double currentPrice,
+                        GrowthStats stats, RiskProfile profile);
 }

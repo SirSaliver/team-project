@@ -1,6 +1,8 @@
 package interfaceadapter.setriskprofile;
 
-import java.time.format.DateTimeFormatter;
+import interfaceadapter.pricechange.PriceChangeState;
+import interfaceadapter.pricechange.PriceChangeViewModel;
+import interfaceadapter.shared.ProjectionFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -15,18 +17,22 @@ import usecase.shared.projection.SellProjection;
  */
 public class SetRiskProfilePresenter implements SetRiskProfileOutputBoundary {
   private static final int TRADING_DAYS_PER_MONTH = 21;
-  private static final DateTimeFormatter DATE_FORMAT =
-          DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US);
 
   private final SetRiskProfileViewModel viewModel;
+  private final PriceChangeViewModel priceChangeViewModel;
 
   /**
-   * Creates a new Set Risk Profile presenter.
+   * Creates a new Set Risk Profile presenter that also hands each successful estimate to the
+   * Price Change view, so the user can explore a price change scenario as a next step.
    *
    * @param viewModel View model for the use case
+   * @param priceChangeViewModel View model for the Price Change use case, or null if the
+   *                             application does not include it
    */
-  public SetRiskProfilePresenter(SetRiskProfileViewModel viewModel) {
+  public SetRiskProfilePresenter(SetRiskProfileViewModel viewModel,
+                                 PriceChangeViewModel priceChangeViewModel) {
     this.viewModel = viewModel;
+    this.priceChangeViewModel = priceChangeViewModel;
   }
 
   @Override
@@ -38,26 +44,49 @@ public class SetRiskProfilePresenter implements SetRiskProfileOutputBoundary {
     double sellPrice = estimate.getSellPrice();
 
     state.setResultTicker(outputData.getTicker());
-    state.setBuyPrice(formatDollars(projection.getStartPrice()) + " (latest close)");
-    state.setSellDate(projection.getSellDate().format(DATE_FORMAT) + " ("
-            + estimate.getHoldPeriod() + " trading days)");
-    state.setSellPrice(formatDollars(sellPrice));
+    state.setBuyPrice(ProjectionFormat.formatBuyPrice(projection.getStartPrice()));
+    state.setSellDate(ProjectionFormat.formatSellDate(projection.getSellDate(),
+            estimate.getHoldPeriod()));
+    state.setSellPrice(ProjectionFormat.formatDollars(sellPrice));
 
-    // The error is the standard deviation of the log return, so the +/- 1 standard deviation
-    // price range is sellPrice * e^(-error) to sellPrice * e^(error).
-    state.setPriceRange(formatDollars(projection.getSellPriceLow()) + " – "
-            + formatDollars(projection.getSellPriceHigh()));
-    double returns = estimate.getReturns();
-    state.setReturns((returns < 0 ? "-" : "+") + formatDollars(Math.abs(returns)));
+    state.setPriceRange(ProjectionFormat.formatPriceRange(projection.getSellPriceLow(),
+            projection.getSellPriceHigh()));
+    state.setReturns(ProjectionFormat.formatDollarsSigned(estimate.getReturns()));
     state.setTargetReached(estimate.isTargetReached());
-    state.setTargetMessage(estimate.isTargetReached()
-            ? "Target gain is reached within your maximum holding period."
-            : "Target gain is not reached within your maximum holding period; "
-              + "this estimate sells at the end of it.");
+    state.setTargetMessage(ProjectionFormat.formatTargetReached(estimate.isTargetReached()));
     state.setErrorMessage(null);
 
     viewModel.setState(state);
     viewModel.firePropertyChange(SetRiskProfileViewModel.RESULT_PROPERTY);
+
+    if (priceChangeViewModel != null) {
+      prepareScenario(outputData);
+    }
+  }
+
+  /**
+   * Makes this estimate the starting point of the Price Change use case.
+   *
+   * @param outputData Output data of the successful estimate
+   */
+  private void prepareScenario(SetRiskProfileOutputData outputData) {
+    double targetGainPercent = outputData.getTargetGain() * 100.0;
+    PriceChangeState state = priceChangeViewModel.getState();
+    state.setScenarioAvailable(true);
+    state.setScenarioTicker(outputData.getTicker());
+    state.setScenarioAmount(outputData.getAmount());
+    state.setScenarioTargetGainPercent(targetGainPercent);
+    state.setScenarioMaxHoldingPeriod(outputData.getMaxHoldingPeriod());
+    state.setScenarioWindowMonths(outputData.getWindowMonths());
+    state.setScenarioSummary(outputData.getTicker() + " · "
+            + ProjectionFormat.formatDollars(outputData.getAmount()) + " invested · "
+            + formatPercent(targetGainPercent) + "% target gain · up to "
+            + outputData.getMaxHoldingPeriod() + " trading days · estimated from the past "
+            + SetRiskProfileViewModel.formatMonths(outputData.getWindowMonths()));
+    state.setErrorMessage(null);
+
+    priceChangeViewModel.setState(state);
+    priceChangeViewModel.firePropertyChange(PriceChangeViewModel.SCENARIO_PROPERTY);
   }
 
   @Override
@@ -95,10 +124,6 @@ public class SetRiskProfilePresenter implements SetRiskProfileOutputBoundary {
 
     viewModel.setState(state);
     viewModel.firePropertyChange(SetRiskProfileViewModel.SETTINGS_PROPERTY);
-  }
-
-  private static String formatDollars(double amount) {
-    return String.format(Locale.US, "$%,.2f", amount);
   }
 
   private static String formatPercent(double percent) {

@@ -10,6 +10,7 @@ import java.time.LocalDate;
  */
 public class SellProjection {
   private final double startPrice;
+  private final double currentPrice;
   private final LocalDate sellDate;
   private final double sellPriceLow;
   private final double sellPriceHigh;
@@ -19,14 +20,16 @@ public class SellProjection {
    * Creates a new SellProjection object.
    *
    * @param startPrice Price of a single share of the stock when bought (latest close)
+   * @param currentPrice Price of a single share now, from which the projection starts
    * @param sellDate Calendar day to sell the stock
    * @param estimate Estimated data from a sell strategy
    * @param sellPriceLow Lower bound of the projected sell price interval
    * @param sellPriceHigh Upper bound of the projected sell price interval
    */
-  public SellProjection(double startPrice, LocalDate sellDate, double sellPriceLow,
-                        double sellPriceHigh, SellEstimate estimate) {
+  public SellProjection(double startPrice, double currentPrice, LocalDate sellDate,
+                        double sellPriceLow, double sellPriceHigh, SellEstimate estimate) {
     this.startPrice = startPrice;
+    this.currentPrice = currentPrice;
     this.sellDate = sellDate;
     this.sellPriceLow = sellPriceLow;
     this.sellPriceHigh = sellPriceHigh;
@@ -35,6 +38,10 @@ public class SellProjection {
 
   public double getStartPrice() {
     return startPrice;
+  }
+
+  public double getCurrentPrice() {
+    return currentPrice;
   }
 
   public LocalDate getSellDate() {
