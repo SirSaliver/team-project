@@ -10,14 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
+import usecase.addtowatchlist.AddToWatchlistWatchlistDataAccessInterface;
 import usecase.viewstockinfo.ViewStockInfoWatchlistDataAccessInterface;
 
 /**
  * Implementation of the Data Access Object (DAO) for the watchlist that uses a JSON file to
  * persist the data.
  */
-public class FileWatchlistDataAccessObject implements ViewStockInfoWatchlistDataAccessInterface {
-  // TODO: After we add data access interfaces to our use cases, make this class implement them.
+public class FileWatchlistDataAccessObject implements ViewStockInfoWatchlistDataAccessInterface,
+        AddToWatchlistWatchlistDataAccessInterface {
   private final Path watchlistFile;
 
   /**
@@ -33,30 +34,34 @@ public class FileWatchlistDataAccessObject implements ViewStockInfoWatchlistData
   /**
    * Constructs a watchlist entity by reading the JSON file.
    *
-   * @return A Watchlist object corresponding to the contents of the JSON file
-   * @throws IOException If the file could not be read
+   * @return A Watchlist object corresponding to the contents of the JSON file, or an empty
+   *     watchlist if the file does not exist yet
+   * @throws IOException If the file could not be read or does not contain valid watchlist data
    */
+  @Override
   public Watchlist readWatchlist() throws IOException {
-    String jsonString = Files.readString(watchlistFile);
-    JSONArray array = new JSONArray(jsonString);
-
-    ArrayList<Stock> stocksList = new ArrayList<>();
-    for (int i = 0; i < array.length(); i++) {
-      stocksList.add(new Stock(array.getString(i)));
+    String jsonString;
+    try {
+      jsonString = Files.readString(watchlistFile);
+    } catch (NoSuchFileException e) {
+      return new Watchlist(new ArrayList<>());
     }
 
-    return new Watchlist(stocksList);
+    try {
+      JSONArray array = new JSONArray(jsonString);
+      ArrayList<Stock> stocksList = new ArrayList<>();
+      for (int i = 0; i < array.length(); i++) {
+        stocksList.add(new Stock(array.getString(i)));
+      }
+      return new Watchlist(stocksList);
+    } catch (JSONException | IllegalArgumentException e) {
+      throw new IOException("Invalid watchlist data", e);
+    }
   }
 
   @Override
   public List<Stock> getWatchlistStocks() throws IOException {
-    try {
-      return readWatchlist().getStocks();
-    } catch (NoSuchFileException e) {
-      return List.of();
-    } catch (JSONException | IllegalArgumentException e) {
-      throw new IOException("Invalid watchlist data", e);
-    }
+    return readWatchlist().getStocks();
   }
 
   /**
@@ -65,6 +70,7 @@ public class FileWatchlistDataAccessObject implements ViewStockInfoWatchlistData
    * @param watchlist The watchlist to save
    * @throws IOException If the file could not be written to
    */
+  @Override
   public void saveWatchlist(Watchlist watchlist) throws IOException {
     JSONArray array = new JSONArray(watchlist.getStocks().stream().map(Stock::getTicker).toArray());
     Files.writeString(watchlistFile, array.toString());

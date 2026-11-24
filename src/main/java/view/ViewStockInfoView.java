@@ -173,13 +173,14 @@ public class ViewStockInfoView extends JPanel {
       for (String ticker : state.getTickers()) {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEADING, 8, 3));
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.add(new JLabel(ticker));
+        // The button goes first so every row's button lines up regardless of ticker length.
         JButton viewButton = new JButton("View");
         viewButton.getAccessibleContext().setAccessibleName("View " + ticker);
         viewButton.addActionListener(event -> onLookup(ticker));
         viewButton.setEnabled(!lookupInProgress);
         viewButtons.add(viewButton);
         row.add(viewButton);
+        row.add(new JLabel(ticker));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, row.getPreferredSize().height));
         watchlistRows.add(row);
       }
