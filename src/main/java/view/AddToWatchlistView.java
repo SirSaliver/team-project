@@ -34,7 +34,7 @@ public class AddToWatchlistView extends JPanel {
   private final JButton addButton = new JButton("Add to watchlist");
   private final JLabel statusLabel = new JLabel(" ");
   private final DefaultTableModel tableModel = new DefaultTableModel(
-          new String[] {"Symbol", "Company", "Exchange"}, 0) {
+          new String[] {"Ticker Symbol", "Company", "Exchange"}, 0) {
     @Override
     public boolean isCellEditable(int row, int column) {
       return false;

@@ -27,7 +27,6 @@ import usecase.setriskprofile.SetRiskProfileStockDataAccessInterface;
  */
 public class ApiStockDataAccessObject implements SetRiskProfileStockDataAccessInterface,
         AddToWatchlistStockDataAccessInterface {
-  // TODO: After we add data access interfaces to our use cases, make this class implement them.
   private static final int SEARCH_RESULT_LIMIT = 20;
 
   private final PolygonRestClient client;

@@ -19,7 +19,6 @@ import usecase.viewstockinfo.ViewStockInfoWatchlistDataAccessInterface;
  */
 public class FileWatchlistDataAccessObject implements ViewStockInfoWatchlistDataAccessInterface,
         AddToWatchlistWatchlistDataAccessInterface {
-  // TODO: After we add data access interfaces to our use cases, make this class implement them.
   private final Path watchlistFile;
 
   /**
