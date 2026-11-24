@@ -7,6 +7,8 @@ import java.util.Locale;
 import usecase.setriskprofile.SetRiskProfileOutputBoundary;
 import usecase.setriskprofile.SetRiskProfileOutputData;
 import usecase.setriskprofile.SetRiskProfileSettingsOutputData;
+import usecase.shared.projection.SellEstimate;
+import usecase.shared.projection.SellProjection;
 
 /**
  * The presenter for the Set Risk Profile use case.
@@ -30,23 +32,25 @@ public class SetRiskProfilePresenter implements SetRiskProfileOutputBoundary {
   @Override
   public void prepareSuccessView(SetRiskProfileOutputData outputData) {
     SetRiskProfileState state = viewModel.getState();
-    double sellPrice = outputData.getSellPrice();
-    double error = outputData.getError();
+    SellProjection projection = outputData.getProjection();
+    SellEstimate estimate = projection.getEstimate();
+
+    double sellPrice = estimate.getSellPrice();
 
     state.setResultTicker(outputData.getTicker());
-    state.setBuyPrice(formatDollars(outputData.getStartPrice()) + " (latest close)");
-    state.setSellDate(outputData.getSellDate().format(DATE_FORMAT) + " ("
-            + outputData.getHoldPeriod() + " trading days)");
+    state.setBuyPrice(formatDollars(projection.getStartPrice()) + " (latest close)");
+    state.setSellDate(projection.getSellDate().format(DATE_FORMAT) + " ("
+            + estimate.getHoldPeriod() + " trading days)");
     state.setSellPrice(formatDollars(sellPrice));
 
     // The error is the standard deviation of the log return, so the +/- 1 standard deviation
     // price range is sellPrice * e^(-error) to sellPrice * e^(error).
-    state.setPriceRange(formatDollars(sellPrice * Math.exp(-error)) + " – "
-            + formatDollars(sellPrice * Math.exp(error)));
-    double returns = outputData.getReturns();
+    state.setPriceRange(formatDollars(projection.getSellPriceLow()) + " – "
+            + formatDollars(projection.getSellPriceHigh()));
+    double returns = estimate.getReturns();
     state.setReturns((returns < 0 ? "-" : "+") + formatDollars(Math.abs(returns)));
-    state.setTargetReached(outputData.isTargetReached());
-    state.setTargetMessage(outputData.isTargetReached()
+    state.setTargetReached(estimate.isTargetReached());
+    state.setTargetMessage(estimate.isTargetReached()
             ? "Target gain is reached within your maximum holding period."
             : "Target gain is not reached within your maximum holding period; "
               + "this estimate sells at the end of it.");

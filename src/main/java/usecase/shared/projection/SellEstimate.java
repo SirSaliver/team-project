@@ -1,8 +1,7 @@
-package entities;
+package usecase.shared.projection;
 
 /**
- * An entity representing the output of an algorithm that predicts when the user should sell
- * a stock. This entity is immutable once created, so it has no mutator methods.
+ * The output of an algorithm that predicts when the user should sell a stock.
  */
 public class SellEstimate {
   private final int holdPeriod;

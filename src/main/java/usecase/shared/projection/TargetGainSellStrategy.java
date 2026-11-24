@@ -2,7 +2,6 @@ package usecase.shared.projection;
 
 import entities.GrowthStats;
 import entities.RiskProfile;
-import entities.SellEstimate;
 
 /**
  * Estimator that calculates the holding period and sell date of a stock from the user's target

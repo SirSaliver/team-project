@@ -2,7 +2,6 @@ package usecase.shared.projection;
 
 import entities.GrowthStats;
 import entities.RiskProfile;
-import entities.SellEstimate;
 
 /**
  * Interface describing an algorithm to estimate the sell date of a stock given its stats and

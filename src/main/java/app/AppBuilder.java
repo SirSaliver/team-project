@@ -16,6 +16,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.WindowConstants;
 import usecase.setriskprofile.SetRiskProfileInputBoundary;
 import usecase.setriskprofile.SetRiskProfileInteractor;
+import usecase.shared.projection.SellProjector;
 import usecase.shared.projection.TargetGainSellStrategy;
 import usecase.viewstockinfo.ViewStockInfoInputBoundary;
 import usecase.viewstockinfo.ViewStockInfoInteractor;
@@ -73,7 +74,7 @@ public class AppBuilder {
     SetRiskProfilePresenter presenter = new SetRiskProfilePresenter(setRiskProfileViewModel);
     SetRiskProfileInputBoundary interactor = new SetRiskProfileInteractor(
             stockDataAccessObject, riskProfileSettingsDataAccessObject, presenter,
-            new TargetGainSellStrategy());
+            new SellProjector(new TargetGainSellStrategy()));
     setRiskProfileController = new SetRiskProfileController(interactor);
     setRiskProfileView.setController(setRiskProfileController);
     return this;
