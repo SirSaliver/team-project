@@ -21,6 +21,7 @@ import usecase.estimateroi.EstimateRoiOutputData;
 public class EstimateRoiView extends JPanel {
   private static final Integer[] HISTORY_OPTIONS = {1, 3, 5};
 
+  private final EstimateRoiViewModel viewModel;
   private final EstimateRoiController controller;
   private final JTextField amountField = new JTextField(8);
   private final JComboBox<Integer> historyBox = new JComboBox<>(HISTORY_OPTIONS);
@@ -35,6 +36,7 @@ public class EstimateRoiView extends JPanel {
    * @param controller The controller used to request estimates
    */
   public EstimateRoiView(EstimateRoiViewModel viewModel, EstimateRoiController controller) {
+    this.viewModel = viewModel;
     this.controller = controller;
     setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
     setBorder(BorderFactory.createTitledBorder("Estimate return (1 year)"));
@@ -71,7 +73,8 @@ public class EstimateRoiView extends JPanel {
   public void setTicker(String ticker) {
     this.ticker = ticker;
     estimateButton.setEnabled(ticker != null);
-    resultLabel.setText(" ");
+    // Forget the previous stock's estimate so it is never shown for the new stock.
+    viewModel.clear();
   }
 
   private void requestEstimate() {
@@ -100,13 +103,15 @@ public class EstimateRoiView extends JPanel {
     final EstimateRoiOutputData result = state.getResult();
     String text = "";
     if (result != null) {
-      text = String.format("Estimated value: $%.2f   Profit/loss: $%.2f (%.2f%%)   "
-              + "Based on %d year(s) of history",
-              result.getEstimatedValue(), result.getProfit(), result.getPercentageReturn(),
-              result.getHistoryLength());
+      text = String.format("<html>Buys %d share(s) at $%.2f<br>"
+              + "Estimated value: $%.2f   Profit/loss: $%.2f (%.2f%%)   "
+              + "Based on %d year(s) of history</html>",
+              result.getShares(), result.getSharePrice(), result.getEstimatedValue(),
+              result.getProfit(), result.getPercentageReturn(), result.getHistoryLength());
     }
     if (state.getErrorMessage() != null) {
-      text = "<html>" + text + "<br><font color='red'>" + state.getErrorMessage()
+      final String previous = text.replace("<html>", "").replace("</html>", "");
+      text = "<html>" + previous + "<br><font color='red'>" + state.getErrorMessage()
               + "</font></html>";
     }
     if (text.isEmpty()) {

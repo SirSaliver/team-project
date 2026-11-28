@@ -59,21 +59,37 @@ class EstimateRoiInteractorTest {
 
   @Test
   void oneYearGainIsProjectedForward() {
-    final FakePresenter presenter = run(List.of(100.0, 105.0, 110.0), 1000, 1);
+    // $1100 buys exactly 10 shares at $110, and the price grew 10% over the last year.
+    final FakePresenter presenter = run(List.of(100.0, 105.0, 110.0), 1100, 1);
 
     assertNull(presenter.error);
-    assertEquals(1100.0, presenter.success.getEstimatedValue(), DELTA);
-    assertEquals(100.0, presenter.success.getProfit(), DELTA);
+    assertEquals(10, presenter.success.getShares());
+    assertEquals(110.0, presenter.success.getSharePrice(), DELTA);
+    assertEquals(1210.0, presenter.success.getEstimatedValue(), DELTA);
+    assertEquals(110.0, presenter.success.getProfit(), DELTA);
     assertEquals(10.0, presenter.success.getPercentageReturn(), DELTA);
     assertEquals(1, presenter.success.getHistoryLength());
   }
 
   @Test
+  void onlyWholeSharesGrowAndLeftoverCashStaysTheSame() {
+    // $1000 buys 9 shares at $110 ($990); the leftover $10 does not grow.
+    final FakePresenter presenter = run(List.of(100.0, 110.0), 1000, 1);
+
+    assertEquals(9, presenter.success.getShares());
+    assertEquals(99.0, presenter.success.getProfit(), DELTA);
+    assertEquals(1099.0, presenter.success.getEstimatedValue(), DELTA);
+    assertEquals(9.9, presenter.success.getPercentageReturn(), DELTA);
+  }
+
+  @Test
   void multiYearHistoryUsesAverageYearlyGrowth() {
     // The price doubles over 2 years, so it grows by sqrt(2) - 1 (about 41.4%) per year.
+    // $1000 buys exactly 10 shares at $100.
     final FakePresenter presenter = run(List.of(50.0, 100.0), 1000, 2);
 
     final double yearlyGrowth = Math.sqrt(2) - 1;
+    assertEquals(10, presenter.success.getShares());
     assertEquals(1000 * (1 + yearlyGrowth), presenter.success.getEstimatedValue(), DELTA);
     assertEquals(yearlyGrowth * 100, presenter.success.getPercentageReturn(), DELTA);
     assertEquals(2, presenter.success.getHistoryLength());
@@ -81,11 +97,30 @@ class EstimateRoiInteractorTest {
 
   @Test
   void priceDropGivesLoss() {
-    final FakePresenter presenter = run(List.of(200.0, 150.0), 500, 1);
+    // $600 buys 4 shares at $150, and the price fell 25% over the last year.
+    final FakePresenter presenter = run(List.of(200.0, 150.0), 600, 1);
 
-    assertEquals(375.0, presenter.success.getEstimatedValue(), DELTA);
-    assertEquals(-125.0, presenter.success.getProfit(), DELTA);
+    assertEquals(4, presenter.success.getShares());
+    assertEquals(450.0, presenter.success.getEstimatedValue(), DELTA);
+    assertEquals(-150.0, presenter.success.getProfit(), DELTA);
     assertEquals(-25.0, presenter.success.getPercentageReturn(), DELTA);
+  }
+
+  @Test
+  void amountBelowOneShareIsRejected() {
+    // $2 cannot buy a single $110 share (the case from the PR review).
+    final FakePresenter presenter = run(List.of(100.0, 110.0), 2, 1);
+
+    assertNull(presenter.success);
+    assertEquals("Amount must be at least the price of one share ($110.00).", presenter.error);
+  }
+
+  @Test
+  void amountOfExactlyOneShareIsAccepted() {
+    final FakePresenter presenter = run(List.of(100.0, 110.0), 110, 1);
+
+    assertNull(presenter.error);
+    assertEquals(1, presenter.success.getShares());
   }
 
   @Test

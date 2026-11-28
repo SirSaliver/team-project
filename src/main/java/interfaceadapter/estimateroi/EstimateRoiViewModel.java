@@ -13,4 +13,10 @@ public class EstimateRoiViewModel extends ViewModel<EstimateRoiState> {
     super("estimate roi");
     setState(new EstimateRoiState(null, null));
   }
+
+  /** Removes any estimate or error, for example when the user views a different stock. */
+  public void clear() {
+    setState(new EstimateRoiState(null, null));
+    firePropertyChange(STATE_PROPERTY);
+  }
 }
